@@ -9,7 +9,7 @@ import quantstats as qs
 import gurobipy as gp
 import argparse
 import warnings
-import sys
+import sys    
 
 """
 Project Setup
@@ -39,7 +39,8 @@ df = pd.DataFrame()
 for asset in assets:
     raw = yf.download(asset, start=start, end=end, auto_adjust = False)
     df[asset] = raw['Adj Close']
-
+    # print(raw)
+    # print(df)
 df_returns = df.pct_change().fillna(0)
 
 
@@ -62,7 +63,8 @@ class EqualWeightPortfolio:
         """
         TODO: Complete Task 1 Below
         """
-
+        for asset in assets:
+            self.portfolio_weights[asset] = 1 / len(assets)
         """
         TODO: Complete Task 1 Above
         """
@@ -113,8 +115,13 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
-
-
+        daily_stdev = df_returns.rolling(window=self.lookback).std().shift(1)
+        inv_stdev = 1 / daily_stdev
+        inv_stdev.loc[:, self.exclude] = 0
+        rows = inv_stdev.index[: self.lookback + 1]
+        inv_stdev.loc[rows, assets] = 0
+        inv_sum = inv_stdev.sum(axis=1)
+        self.portfolio_weights = inv_stdev.div(inv_sum, axis=0)
 
         """
         TODO: Complete Task 2 Above
@@ -191,8 +198,8 @@ class MeanVariancePortfolio:
                 # Sample Code: Initialize Decision w and the Objective
                 # NOTE: You can modify the following code
                 w = model.addMVar(n, name="w", ub=1)
-                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
-
+                model.addConstr(w.sum() == 1, name="constraint")
+                model.setObjective(mu @ w - gamma / 2 * w @ Sigma @ w, gp.GRB.MAXIMIZE)
                 """
                 TODO: Complete Task 3 Above
                 """

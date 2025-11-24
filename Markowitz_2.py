@@ -51,7 +51,7 @@ class MyPortfolio:
     NOTE: You can modify the initialization function
     """
 
-    def __init__(self, price, exclude, lookback=50, gamma=0):
+    def __init__(self, price, exclude, lookback=15, gamma=0):
         self.price = price
         self.returns = price.pct_change().fillna(0)
         self.exclude = exclude
@@ -70,8 +70,19 @@ class MyPortfolio:
         """
         TODO: Complete Task 4 Below
         """
-        
-        
+        daily_stdev = self.returns.rolling(window=self.lookback).std().shift(1)
+        daily_sum = self.returns.rolling(window=self.lookback).sum().shift(1)
+        for day in self.returns.index:
+            idx = assets[0]
+            mx = -100000000000
+            for asset in assets:
+                if daily_sum.loc[day, asset] > mx and daily_sum.loc[day, asset] / daily_stdev.loc[day, idx] > 0.5:
+                    idx = asset
+                    mx = daily_sum.loc[day, asset]
+                self.portfolio_weights.loc[day, asset] = 0
+
+            self.portfolio_weights.loc[day, idx] = 1
+
         """
         TODO: Complete Task 4 Above
         """
